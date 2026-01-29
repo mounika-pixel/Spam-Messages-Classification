@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Spam Classifier</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-gradient: linear-gradient(135deg, #ff6b9d, #c86dd7, #667eea, #4ecdc4, #44a08d);
+            --container-bg: white;
+            --container-shadow: rgba(0, 0, 0, 0.3);
+            --text-primary: #333;
+            --text-secondary: #666;
+            --label-color: #ff6b9d;
+            --heading-color: #667eea;
+            --border-color: #ddd;
+            --focus-color: #667eea;
+            --button-bg: linear-gradient(135deg, #667eea, #764ba2);
+            --counter-color: #667eea;
+            --highlight-bg: #fff1a8;
+            --highlight-text: #7a4b00;
+        }
+
+        body.dark-mode {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460, #1a3d5c, #0d5a5a);
+            --container-bg: #1e1e1e;
+            --container-shadow: rgba(0, 0, 0, 0.7);
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --label-color: #ff9bcf;
+            --heading-color: #8ba3ff;
+            --border-color: #444;
+            --focus-color: #8ba3ff;
+            --counter-color: #8ba3ff;
+            --highlight-bg: #3a3a00;
+            --highlight-text: #ffd966;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-primary);
+            transition: background 0.3s ease;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toggle-btn {
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .container {
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px var(--container-shadow);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--heading-color);
+            margin-bottom: 10px;
+            font-weight: 800;
+            transition: color 0.3s ease;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            transition: color 0.3s ease;
+        }
+
+        label {
+            font-weight: 700;
+            color: var(--label-color);
+            transition: color 0.3s ease;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            font-size: 1em;
+            resize: vertical;
+            background: var(--container-bg);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--focus-color);
+        }
+
+        .char-counter {
+            text-align: right;
+            margin-top: 6px;
+            font-size: 0.85em;
+            color: var(--counter-color);
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .live-risk {
+            margin-top: 8px;
+            font-weight: 700;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+
+        .highlight-box {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+
+        .highlight-word {
+            background: var(--highlight-bg);
+            color: var(--highlight-text);
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-right: 6px;
+            display: inline-block;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .result.spam {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .result.ham {
+            background: #51cf66;
+            color: white;
+        }
+
+        .confidence {
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="theme-toggle">
+        <button class="toggle-btn" id="themeToggle" onclick="toggleDarkMode()" title="Toggle dark/light mode">🌙</button>
+    </div>
+
+    <div class="container">
+        <h1>📧 SMS Spam Classifier</h1>
+        <p class="subtitle">Enter a message to check if it is spam</p>
+
+        <form action="/predict" method="post">
+            <label>Message Text</label>
+            <textarea id="message" name="message" placeholder="Example: Congratulations! You've won a free iPhone..."
+                required oninput="updateCharCounter(); analyzeText();">{{ message or '' }}</textarea>
+
+            <div class="char-counter" id="charCounter">0 characters</div>
+
+            <!-- 🔥 Real-Time Analyzer -->
+            <div class="live-risk" id="liveRisk"></div>
+
+            <div class="highlight-box" id="highlightBox"></div>
+
+            <button type="submit" class="btn-submit">Analyze Message</button>
+            <button type="button" class="btn-secondary" onclick="clearMessage()">Clear Message</button>
+        </form>
+
+        {% if prediction %}
+        <div class="result {{ 'spam' if 'Not Spam' not in prediction else 'ham' }}">
+            <div>{{ prediction }}</div>
+            {% if confidence %}
+            <div class="confidence">Confidence: {{ confidence }}%</div>
+            {% endif %}
+            {% if keywords %}
+            <div class="highlight-box" style="margin-top: 12px;">
+                Keywords: {% for word in keywords %}<span class="highlight-word">{{ word }}</span>{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Dark Mode Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        
+        // Check for saved theme preference or default to light mode
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = '☀️';
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        function updateCharCounter() {
+            const text = document.getElementById("message").value;
+            document.getElementById("charCounter").innerText =
+                text.length + " characters";
+        }
+
+        function analyzeText() {
+            const text = document.getElementById("message").value;
+
+            updateHighlights(text);
+
+            if (text.length < 3) {
+                document.getElementById("liveRisk").innerText = "";
+                return;
+            }
+
+            fetch("/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    let level = "Low";
+                    if (data.spam_probability > 70) level = "Medium";
+                    if (data.spam_probability > 90) level = "High";
+
+                    document.getElementById("liveRisk").innerText =
+                        "Live Spam Risk: " + level + " (" + data.spam_probability + "%)";
+                });
+        }
+
+        function updateHighlights(text) {
+            const keywords = [
+                "free", "win", "winner", "claim", "prize", "urgent", "act now", "limited", "offer",
+                "click", "link", "http", "www", "verify", "account", "password", "bank",
+                "congratulations", "gift", "bonus", "guaranteed", "credit", "loan", "otp"
+            ];
+
+            const lower = text.toLowerCase();
+            const matches = keywords.filter(word => lower.includes(word));
+            const unique = [...new Set(matches)];
+
+            const box = document.getElementById("highlightBox");
+            if (unique.length === 0) {
+                box.innerText = "";
+                return;
+            }
+
+            box.innerHTML = "Keywords: " + unique
+                .map(word => `<span class=\"highlight-word\">${word}</span>`)
+                .join("");
+        }
+
+        function clearMessage() {
+            const textarea = document.getElementById("message");
+            textarea.value = "";
+            updateCharCounter();
+            document.getElementById("liveRisk").innerText = "";
+            document.getElementById("highlightBox").innerText = "";
+            textarea.focus();
+        }
+
+        updateCharCounter();
+    </script>
+
+</body>
+
+</html>
